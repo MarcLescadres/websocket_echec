@@ -1,4 +1,4 @@
-console.log("Script chargé.")
+console.log("Script chargé.");
 
 // S'assurer que le script est exécuté après le chargement complet de la page
 window.onload = function() {
@@ -23,7 +23,7 @@ window.onload = function() {
 // Fonction pour dessiner le plateau d'échecs
 function drawBoard(ctx) {
     const squareSize = 60;  // Taille de chaque case (60px x 60px)
-    
+
     // Dessiner chaque case du plateau
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -36,34 +36,62 @@ function drawBoard(ctx) {
             ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
         }
     }
-    
-    // Dessiner les pièces (par exemple les pions) sur le plateau (si nécessaire)
+
+    // Dessiner les pièces (par exemple les pions) sur le plateau
     drawPieces(ctx);
 }
 
-// Fonction pour dessiner des pièces (pour l'exemple, nous plaçons des pions sur les deux premières lignes)
+// Fonction pour dessiner des pièces avec des images
 function drawPieces(ctx) {
     const squareSize = 60;
-    
-    // Dessiner les pions blancs sur la ligne 2
+
+    // Dessiner les pions blancs sur la ligne 6 (de bas en haut)
     for (let col = 0; col < 8; col++) {
-        drawPiece(ctx, col, 1, 'white'); // Pions blancs sur la ligne 2
+        drawPiece(ctx, col, 6, 'white', 'pawn'); // Pions blancs sur la ligne 6
     }
-    
-    // Dessiner les pions noirs sur la ligne 7
+
+    // Dessiner les pions noirs sur la ligne 1 (de bas en haut)
     for (let col = 0; col < 8; col++) {
-        drawPiece(ctx, col, 6, 'black'); // Pions noirs sur la ligne 7
+        drawPiece(ctx, col, 1, 'black', 'pawn'); // Pions noirs sur la ligne 1
     }
+
+    // Dessiner les tours
+    drawPiece(ctx, 0, 0, 'black', 'rook');
+    drawPiece(ctx, 7, 0, 'black', 'rook');
+    drawPiece(ctx, 0, 7, 'white', 'rook');
+    drawPiece(ctx, 7, 7, 'white', 'rook');
+
+    // Cavaliers
+    drawPiece(ctx, 1, 0, 'black', 'knight');
+    drawPiece(ctx, 6, 0, 'black', 'knight');
+    drawPiece(ctx, 1, 7, 'white', 'knight');
+    drawPiece(ctx, 6, 7, 'white', 'knight');
+
+    // Fous
+    drawPiece(ctx, 2, 0, 'black', 'bishop');
+    drawPiece(ctx, 5, 0, 'black', 'bishop');
+    drawPiece(ctx, 2, 7, 'white', 'bishop');
+    drawPiece(ctx, 5, 7, 'white', 'bishop');
+
+    // Reines
+    drawPiece(ctx, 3, 0, 'black', 'queen');
+    drawPiece(ctx, 3, 7, 'white', 'queen');
+
+    // Rois
+    drawPiece(ctx, 4, 0, 'black', 'king');
+    drawPiece(ctx, 4, 7, 'white', 'king');
 }
 
-// Fonction pour dessiner une pièce (ici, un simple cercle pour simuler une pièce)
-function drawPiece(ctx, col, row, color) {
+// Fonction pour dessiner une pièce avec une image
+function drawPiece(ctx, col, row, color, type) {
     const squareSize = 60;
-    const radius = squareSize / 4;  // Taille de la pièce
+    const image = new Image();  // Créer un nouvel objet Image
+
+    // Utiliser le chemin relatif vers l'image dans le dossier static/assets
+    image.src = `/static/assets/${color} ${type}.png`;  // Utiliser /static/ comme base pour les fichiers statiques
     
-    ctx.beginPath();
-    ctx.arc((col * squareSize) + squareSize / 2, (row * squareSize) + squareSize / 2, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = color === 'white' ? '#FFFFFF' : '#000000';  // Blanc ou noir
-    ctx.fill();
-    ctx.stroke();  // Ajouter un contour pour la pièce
+    // Une fois l'image chargée, dessiner la pièce sur le canvas
+    image.onload = function() {
+        ctx.drawImage(image, col * squareSize, row * squareSize, squareSize, squareSize);
+    };
 }
