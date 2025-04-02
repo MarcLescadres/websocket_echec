@@ -18,12 +18,14 @@ def home():
     """Affiche la page principale du jeu."""
     return render_template("index.html")
 
-@app.route("/api/board")
+@app.route("/initial/board")
 def get_board():
     board = Board()  # Crée un objet Board
     return jsonify(board.board)  # Renvoie le plateau au format JSON
 
+
 from .websockets import register_websocket_events #Faire ce import après l'initialisation de socketio
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

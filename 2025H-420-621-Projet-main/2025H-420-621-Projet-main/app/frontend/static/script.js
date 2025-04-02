@@ -4,7 +4,7 @@ window.onload = function() {
     const squareSize = 60;
 
     // Charger le plateau d'échecs depuis l'API
-    fetch('/api/board')
+    fetch('/initial/board')
         .then(response => response.json())
         .then(board => {
             drawBoard(ctx, board);
