@@ -6,8 +6,9 @@ from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
 
-from game import Game, Board  # Ton fichier de logique du jeu
+from game import Game, Board
 from game.piece import string_to_piece
+from game.rules import validate_move, is_checkmate, is_promotion
 
 # Définir les chemins des dossiers frontend
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -43,30 +44,40 @@ def handle_move(data):
         to_x = data['to_x']
         to_y = data['to_y']
 
-        # Récupérer la chaîne représentant la pièce
-        piece_str = game.board.board[from_x][from_y]
+        valid, reason = validate_move(game, from_x, from_y, to_x, to_y)
 
-        # Convertir en objet Piece
-        piece = string_to_piece(piece_str)
-
-        if piece is None:
-            socketio.emit('move_error', {'error': 'Aucune pièce à cet endroit.'})
+        if not valid:
+            socketio.emit('move_error', {'error': reason})
             return
 
-        valid_moves = piece.get_valid_moves(game.board.board, from_x, from_y)
+        piece_str = game.board.board[from_x][from_y]
+        game.board.board[to_x][to_y] = piece_str
+        game.board.board[from_x][from_y] = " "
 
-        if (to_x, to_y) in valid_moves:
-            game.board.board[to_x][to_y] = piece_str
-            game.board.board[from_x][from_y] = " "
+        # Promotion automatique en dame (queen)
+        if is_promotion(piece_str, to_x):
+            color = piece_str.split()[0]
+            game.board.board[to_x][to_y] = f"{color} queen"
 
-            socketio.emit('board_update', {
-                'board': game.board.board,
-                'from_x': from_x,
-                'from_y': from_y,
-                'to_x': to_x,
-                'to_y': to_y})
-        else:
-            socketio.emit('move_error', {'error': 'Mouvement non valide.'})
+        # Mise à jour du tour et dernier coup
+        game.last_move = {
+            'piece': piece_str,
+            'from': (from_x, from_y),
+            'to': (to_x, to_y)
+        }
+        game.turn = "black" if game.turn == "white" else "white"
+
+        socketio.emit('board_update', {
+            'board': game.board.board,
+            'from_x': from_x,
+            'from_y': from_y,
+            'to_x': to_x,
+            'to_y': to_y
+        })
+
+        # Vérifier l'échec et mat
+        if is_checkmate(game):
+            socketio.emit('game_over', {'winner': piece_str.split()[0]})
 
     except Exception as e:
         socketio.emit('move_error', {'error': str(e)})

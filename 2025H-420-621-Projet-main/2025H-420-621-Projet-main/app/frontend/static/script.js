@@ -24,12 +24,36 @@ window.onload = function () {
         const toX = data.to_x;
         const toY = data.to_y;
 
-        // Redessiner uniquement les cases impactées
+        // Redessiner uniquement les cases impactées (roi)
         drawSquare(ctx, fromX, fromY);
         drawPieceAt(ctx, fromX, fromY, updatedBoard[fromX][fromY]);
 
         drawSquare(ctx, toX, toY);
         drawPieceAt(ctx, toX, toY, updatedBoard[toX][toY]);
+
+        // 🔄 Mise à jour spéciale pour le roque (roi a bougé de 2 cases horizontalement)
+        if (Math.abs(fromY - toY) === 2) {
+            // Grand roque
+            if (toY < fromY) {
+                // Efface l'ancienne tour (coin gauche)
+                drawSquare(ctx, toX, 0);
+                drawPieceAt(ctx, toX, 0, updatedBoard[toX][0]);
+
+                // Affiche la tour à sa nouvelle position
+                drawSquare(ctx, toX, toY + 1);
+                drawPieceAt(ctx, toX, toY + 1, updatedBoard[toX][toY + 1]);
+            }
+            // Petit roque
+            else {
+                // Efface l'ancienne tour (coin droit)
+                drawSquare(ctx, toX, 7);
+                drawPieceAt(ctx, toX, 7, updatedBoard[toX][7]);
+
+                // Affiche la tour à sa nouvelle position
+                drawSquare(ctx, toX, toY - 1);
+                drawPieceAt(ctx, toX, toY - 1, updatedBoard[toX][toY - 1]);
+            }
+        }
     });
 
     // Écouter les erreurs de mouvement
@@ -50,6 +74,8 @@ window.onload = function () {
         const row = Math.floor(y / squareSize);
 
         if (selectedPiece) {
+            console.log(`From (${selectedPiece?.row}, ${selectedPiece?.col}) → (${row}, ${col})`);
+
             const moveData = {
                 from_x: selectedPiece.row,
                 from_y: selectedPiece.col,
