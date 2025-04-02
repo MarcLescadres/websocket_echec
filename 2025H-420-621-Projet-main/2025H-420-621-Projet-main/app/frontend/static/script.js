@@ -1,7 +1,10 @@
-window.onload = function() {
+window.onload = function () {
     const canvas = document.getElementById('chessboard');
     const ctx = canvas.getContext('2d');
     const squareSize = 60;
+
+    // Connexion WebSocket à l'origine actuelle
+    const socket = io();
 
     // Charger le plateau d'échecs depuis l'API
     fetch('/initial/board')
@@ -11,38 +14,91 @@ window.onload = function() {
             drawPieces(ctx, board);
         })
         .catch(error => console.error("Erreur lors du chargement du plateau:", error));
+
+    // Écouter les mises à jour du plateau (après un mouvement)
+    socket.on('board_update', (data) => {
+        const updatedBoard = data.board;
+
+        const fromX = data.from_x;
+        const fromY = data.from_y;
+        const toX = data.to_x;
+        const toY = data.to_y;
+
+        // Redessiner uniquement les cases impactées
+        drawSquare(ctx, fromX, fromY);
+        drawPieceAt(ctx, fromX, fromY, updatedBoard[fromX][fromY]);
+
+        drawSquare(ctx, toX, toY);
+        drawPieceAt(ctx, toX, toY, updatedBoard[toX][toY]);
+    });
+
+    // Écouter les erreurs de mouvement
+    socket.on('move_error', (data) => {
+        console.error('Erreur de mouvement:', data.error);
+        alert("Erreur : " + data.error);
+    });
+
+    let selectedPiece = null;
+
+    // Écouter les clics pour déplacer les pièces
+    canvas.addEventListener('click', function (event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const col = Math.floor(x / squareSize);
+        const row = Math.floor(y / squareSize);
+
+        if (selectedPiece) {
+            const moveData = {
+                from_x: selectedPiece.row,
+                from_y: selectedPiece.col,
+                to_x: row,
+                to_y: col
+            };
+            socket.emit('move_piece', moveData);
+            selectedPiece = null;
+        } else {
+            selectedPiece = { row: row, col: col };
+        }
+    });
 };
 
+// 🔳 Dessine le plateau complet (si besoin au début)
 function drawBoard(ctx, board) {
-    const squareSize = 60;
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            // Inverser la logique de la couleur des cases pour que la case en bas à gauche soit noire
-            const isDarkSquare = (row + col) % 2 === 1; // Inverser la condition
-            ctx.fillStyle = isDarkSquare ? '#D18B47' : '#FFCE9E';
-            ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+            drawSquare(ctx, row, col);
         }
     }
 }
 
+// 🧱 Dessine une seule case (fond clair ou foncé)
+function drawSquare(ctx, row, col) {
+    const squareSize = 60;
+    const isDark = (row + col) % 2 === 1;
+    ctx.fillStyle = isDark ? '#D18B47' : '#FFCE9E';
+    ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+}
+
+// 🧩 Dessine toutes les pièces du plateau (au chargement initial)
 function drawPieces(ctx, board) {
-    const squareSize = 60;
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            const piece = board[row][col];
-            if (piece !== ' ') {
-                drawPiece(ctx, col, row, piece);
-            }
+            drawPieceAt(ctx, row, col, board[row][col]);
         }
     }
 }
 
-function drawPiece(ctx, col, row, piece) {
+// ♟️ Dessine une pièce si présente
+function drawPieceAt(ctx, row, col, piece) {
     const squareSize = 60;
-    const image = new Image();
-    image.src = `/static/assets/${piece}.png`;  // Assurez-vous que les images sont dans le bon dossier
+    if (piece && piece !== " ") {
+        const image = new Image();
+        image.src = `/static/assets/${piece}.png`;
 
-    image.onload = function() {
-        ctx.drawImage(image, col * squareSize, row * squareSize, squareSize, squareSize);
-    };
+        image.onload = function () {
+            ctx.drawImage(image, col * squareSize, row * squareSize, squareSize, squareSize);
+        };
+    }
 }
