@@ -147,12 +147,15 @@ def validate_move(game, from_x, from_y, to_x, to_y):
 
     if isinstance(piece, Pawn):
         if (to_x, to_y) not in valid_moves:
-            if can_en_passant(game, from_x, from_y, to_x, to_y):
-                direction = -1 if piece.color == "white" else 1
+            can_en_pass, reason = can_en_passant(game, from_x, from_y, to_x, to_y)
+            if can_en_pass:
+                direction = 1 if piece.color == "white" else -1
                 captured_x = to_x + direction
                 captured_y = to_y
                 game.board.board[captured_x][captured_y] = " "
-                return True, "prise en passant"
+                game.board.board[to_x][to_y] = piece_str
+                game.board.board[from_x][from_y] = " "
+                return True, reason
             return False, "Coup illégal pour un pion"
 
     if (to_x, to_y) not in valid_moves:
@@ -190,7 +193,7 @@ def can_en_passant(game, fx, fy, tx, ty):
         return False
 
     if abs(last['from'][0] - last['to'][0]) == 2:
-        return True
+        return True, "prise en passant"
 
     return False
 

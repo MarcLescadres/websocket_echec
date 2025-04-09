@@ -24,6 +24,15 @@ window.onload = function () {
         const toX = data.to_x;
         const toY = data.to_y;
 
+        // Gestion de l'affichage pour la prise en passant
+        if (data.reason === "prise en passant") {
+            const direction = (fromX < toX) ? -1 : 1;
+            const capturedX = toX + direction;
+            const capturedY = toY;
+        
+            drawSquare(ctx, capturedX, capturedY);
+            drawPieceAt(ctx, capturedX, capturedY, updatedBoard[capturedX][capturedY]);
+        }
         // Redessiner uniquement les cases impactées (roi)
         drawSquare(ctx, fromX, fromY);
         drawPieceAt(ctx, fromX, fromY, updatedBoard[fromX][fromY]);
