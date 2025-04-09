@@ -1,33 +1,30 @@
 from copy import deepcopy
-from game.piece import string_to_piece, King, Pawn ,Rook
+from game.piece import string_to_piece, King, Pawn, Rook
 
 def is_roque_path_under_attack(board, color, from_x, from_y, to_x, to_y):
-    # Définir les cases à vérifier en fonction du type de roque
     if color == "white":
-        if (from_x, from_y, to_x, to_y) == (7, 4, 7, 2):  # Grand roque blanc
-            path = [(7, 3), (7, 2)]  # Cases traversées par le roi (c1, b1)
-        elif (from_x, from_y, to_x, to_y) == (7, 4, 7, 6):  # Petit roque blanc
-            path = [(7, 5), (7, 6)]  # Cases traversées par le roi (f1, g1)
+        if (from_x, from_y, to_x, to_y) == (7, 4, 7, 2):
+            path = [(7, 3), (7, 2)]
+        elif (from_x, from_y, to_x, to_y) == (7, 4, 7, 6):
+            path = [(7, 5), (7, 6)]
         else:
             return False
     elif color == "black":
-        if (from_x, from_y, to_x, to_y) == (0, 4, 0, 2):  # Grand roque noir
-            path = [(0, 3), (0, 2)]  # Cases traversées par le roi (c8, b8)
-        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 6):  # Petit roque noir
-            path = [(0, 5), (0, 6)]  # Cases traversées par le roi (f8, g8)
+        if (from_x, from_y, to_x, to_y) == (0, 4, 0, 2):
+            path = [(0, 3), (0, 2)]
+        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 6):
+            path = [(0, 5), (0, 6)]
         else:
             return False
 
-    # Vérifier si l'une des cases dans le chemin est attaquée
     for x, y in path:
         for i in range(8):
             for j in range(8):
                 piece = string_to_piece(board[i][j])
                 if piece and piece.color != color:
                     if (x, y) in piece.get_valid_moves(board, i, j):
-                        return True  # Si une pièce adverse peut attaquer la case
-
-    return False  # Si aucune case n'est attaquée
+                        return True
+    return False
 
 def king_in_check(board, color):
     king_pos = None
@@ -46,7 +43,6 @@ def king_in_check(board, color):
             if p and p.color != color:
                 if king_pos in p.get_valid_moves(board, x, y):
                     return True
-
     return False
 
 def validate_move(game, from_x, from_y, to_x, to_y):
@@ -59,31 +55,46 @@ def validate_move(game, from_x, from_y, to_x, to_y):
     if piece.color != game.turn:
         return False, "Ce n'est pas le tour de ce joueur."
 
-    
-        
+    if isinstance(piece, Rook):
+        if piece.color == "white":
+            if board[7][0] != "white rook":
+                game.white_can_castle_queenside = False
+            if board[7][7] != "white rook":
+                game.white_can_castle_kingside = False
+        elif piece.color == "black":
+            if board[0][0] != "black rook":
+                game.black_can_castle_queenside = False
+            if board[0][7] != "black rook":
+                game.black_can_castle_kingside = False
+
     # Roques personnalisés pour le roi blanc (rangée 7) ou noir (rangée 0)
     if isinstance(piece, King):
-        if not ((from_x == 7 and from_y == 4 and to_x == 7 and to_y == 2) or  # Grand roque blanc
-                (from_x == 7 and from_y == 4 and to_x == 7 and to_y == 6) or  # Petit roque blanc
-                (from_x == 0 and from_y == 4 and to_x == 0 and to_y == 2) or  # Grand roque noir
-                (from_x == 0 and from_y == 4 and to_x == 0 and to_y == 6)):   # Petit roque noir
-            # Désactiver les options de roque si le roi se déplace normalement
+        if not ((from_x == 7 and from_y == 4 and to_x == 7 and to_y == 2) or
+                (from_x == 7 and from_y == 4 and to_x == 7 and to_y == 6) or
+                (from_x == 0 and from_y == 4 and to_x == 0 and to_y == 2) or
+                (from_x == 0 and from_y == 4 and to_x == 0 and to_y == 6)):
             if piece.color == "white":
                 game.white_can_castle_kingside = False
                 game.white_can_castle_queenside = False
-                
             else:
                 game.black_can_castle_kingside = False
                 game.black_can_castle_queenside = False
 
-         # Désactiver le roque si la tour se déplace
-       
+        if piece.color == "white":
+            if board[7][0] != "white rook":
+                game.white_can_castle_queenside = False
+            if board[7][7] != "white rook":
+                game.white_can_castle_kingside = False
+        elif piece.color == "black":
+            if board[0][0] != "black rook":
+                game.black_can_castle_queenside = False
+            if board[0][7] != "black rook":
+                game.black_can_castle_kingside = False
 
-        # Grand roque blanc
-        if (from_x, from_y, to_x, to_y) == (7, 4, 7, 2) and (not is_roque_path_under_attack(board, "white", from_x, from_y, to_x, to_y)):
+        if (from_x, from_y, to_x, to_y) == (7, 4, 7, 2) and not is_roque_path_under_attack(board, "white", from_x, from_y, to_x, to_y):
             if game.white_can_castle_queenside and not king_in_check(board, "white"):
                 if board[7][3] == " " and board[7][2] == " ":
-                    game.board.board[7][3] = game.board.board[7][0]  # Tour à côté du roi
+                    game.board.board[7][3] = game.board.board[7][0]
                     game.board.board[7][0] = " "
                     game.white_can_castle_queenside = False
                     game.white_can_castle_kingside = False
@@ -93,11 +104,10 @@ def validate_move(game, from_x, from_y, to_x, to_y):
             else:
                 return False, "Grand roque blanc non autorisé."
 
-        # Petit roque blanc
-        elif (from_x, from_y, to_x, to_y) == (7, 4, 7, 6) and (not is_roque_path_under_attack(board, "white", from_x, from_y, to_x, to_y)):
+        elif (from_x, from_y, to_x, to_y) == (7, 4, 7, 6) and not is_roque_path_under_attack(board, "white", from_x, from_y, to_x, to_y):
             if game.white_can_castle_kingside and not king_in_check(board, "white"):
                 if board[7][6] == " " and board[7][5] == " ":
-                    game.board.board[7][5] = game.board.board[7][7]  # Tour à côté du roi
+                    game.board.board[7][5] = game.board.board[7][7]
                     game.board.board[7][7] = " "
                     game.white_can_castle_kingside = False
                     game.white_can_castle_queenside = False
@@ -107,9 +117,8 @@ def validate_move(game, from_x, from_y, to_x, to_y):
             else:
                 return False, "Petit roque blanc non autorisé."
 
-        # petit roque noir
-        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 6) and (not is_roque_path_under_attack(board, "black", from_x, from_y, to_x, to_y)):
-            if game.black_can_castle_queenside and not king_in_check(board, "black"):
+        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 6) and not is_roque_path_under_attack(board, "black", from_x, from_y, to_x, to_y):
+            if game.black_can_castle_kingside and not king_in_check(board, "black"):
                 if board[0][6] == " " and board[0][5] == " ":
                     game.board.board[0][5] = game.board.board[0][7]
                     game.board.board[0][7] = " "
@@ -119,13 +128,12 @@ def validate_move(game, from_x, from_y, to_x, to_y):
                 else:
                     return False, "Cases bloquées pour le roque."
             else:
-                return False, "petit roque noir non autorisé."
+                return False, "Petit roque noir non autorisé."
 
-        # grand roque noir
-        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 2) and (not is_roque_path_under_attack(board, "black", from_x, from_y, to_x, to_y)):
-            if game.black_can_castle_kingside and not king_in_check(board, "black"):
+        elif (from_x, from_y, to_x, to_y) == (0, 4, 0, 2) and not is_roque_path_under_attack(board, "black", from_x, from_y, to_x, to_y):
+            if game.black_can_castle_queenside and not king_in_check(board, "black"):
                 if board[0][3] == " " and board[0][2] == " ":
-                    game.board.board[0][3] = game.board.board[0][7]
+                    game.board.board[0][3] = game.board.board[0][0]
                     game.board.board[0][0] = " "
                     game.black_can_castle_kingside = False
                     game.black_can_castle_queenside = False
@@ -133,11 +141,10 @@ def validate_move(game, from_x, from_y, to_x, to_y):
                 else:
                     return False, "Cases bloquées pour le roque."
             else:
-                return False, "grand roque noir non autorisé."
+                return False, "Grand roque noir non autorisé."
 
     valid_moves = piece.get_valid_moves(board, from_x, from_y)
 
-    # Prise en passant
     if isinstance(piece, Pawn):
         if (to_x, to_y) not in valid_moves:
             if can_en_passant(game, from_x, from_y, to_x, to_y):
