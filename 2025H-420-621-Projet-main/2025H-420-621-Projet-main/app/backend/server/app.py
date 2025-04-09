@@ -72,7 +72,8 @@ def handle_move(data):
             'from_x': from_x,
             'from_y': from_y,
             'to_x': to_x,
-            'to_y': to_y
+            'to_y': to_y,
+            'reason': reason  
         })
 
         # Vérifier l'échec et mat
