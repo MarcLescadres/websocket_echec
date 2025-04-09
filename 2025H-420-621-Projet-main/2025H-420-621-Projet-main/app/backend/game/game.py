@@ -19,9 +19,7 @@ class Game:
             print(f"{self.turn.capitalize()}'s turn")
 
             move = input("Enter move (e.g., 'e2 e4'): ").strip().lower()
-            if move == "exit":
-                print("Game exited.")
-                break
+            
 
             try:
                 start_pos, end_pos = move.split()
