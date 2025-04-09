@@ -2,10 +2,6 @@ class Piece:
     def __init__(self, color):
         self.color = color
 
-    def get_valid_moves(self, board, x, y):
-        raise NotImplementedError()
-
-
 # -------------------------
 # UTILITY: Convertir string → objet Piece
 # -------------------------
