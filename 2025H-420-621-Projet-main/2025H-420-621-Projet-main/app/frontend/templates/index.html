@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +10,22 @@
 
 <body>
     <h1>Jeu d'échecs</h1>
-    <canvas id="chessboard" width="480" height="480"></canvas>
+
+    <div id="controls">
+        <button id="btn-multiplayer">Jouer en multijoueur</button>
+        <button id="btn-ai">Jouer contre l'ordinateur</button>
+    </div>
+
+    <div id="player-form" style="display: none;">
+        <p>Entrez votre nom :</p>
+        <input type="text" id="player-name" placeholder="Votre nom" />
+        <button id="submit-name">Rejoindre la partie</button>
+    </div>
+
+    <canvas id="chessboard" width="480" height="480" style="display: none;"></canvas>
+
+    <div id="info"></div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-
 </html>
