@@ -103,6 +103,23 @@ def handle_move(data):
             'from': (from_x, from_y),
             'to': (to_x, to_y)
         }
+
+        
+        if is_checkmate(game):
+            print("Échec et mat détecté")
+            winner_color = piece_str.split()[0]
+            loser_sid = player_slots["white"] if winner_color == "black" else player_slots["black"]
+            winner_sid = player_slots[winner_color]
+
+            if winner_sid:
+                socketio.emit("victory_checkmate", room=winner_sid)
+            if loser_sid:
+                socketio.emit("defeat_checkmate", room=loser_sid)
+
+            game = Game()
+            return  # ⛔ Sortir après victoire, ne pas changer le tour
+
+        
         game.turn = "black" if game.turn == "white" else "white"
 
         socketio.emit('board_update', {
@@ -113,10 +130,6 @@ def handle_move(data):
             'to_y': to_y,
             'reason': reason
         })
-
-        if is_checkmate(game):
-            socketio.emit('game_over', {'winner': piece_str.split()[0]})
-            game = Game()  # Reset du jeu après victoire
 
     except Exception as e:
         socketio.emit('move_error', {'error': str(e)})
