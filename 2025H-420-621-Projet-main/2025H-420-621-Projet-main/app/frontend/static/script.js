@@ -14,6 +14,11 @@ window.onload = function () {
     const nameInput = document.getElementById("player-name");
     const submitBtn = document.getElementById("submit-name");
     const info = document.getElementById("info");
+    const abandonBtn = document.createElement("button");
+    abandonBtn.innerText = "Abandonner la partie";
+    abandonBtn.style.display = "none";
+    abandonBtn.style.marginTop = "10px";
+    document.body.appendChild(abandonBtn);
 
     let playerName = "";
     let myColor = null;
@@ -34,6 +39,7 @@ window.onload = function () {
             socket.emit("register_name", { name: playerName });
             form.style.display = "none";
             canvas.style.display = "block";
+            abandonBtn.style.display = "inline-block";
             fetch('/initial/board')
                 .then(response => response.json())
                 .then(board => {
@@ -43,6 +49,12 @@ window.onload = function () {
                 })
                 .catch(error => console.error("Erreur lors du chargement du plateau:", error));
         }
+    };
+
+    abandonBtn.onclick = () => {
+        socket.emit("player_abandon");
+        alert("Vous avez abandonné la partie.");
+        location.reload();
     };
 
     socket.on("player_list", (players) => {
@@ -63,6 +75,11 @@ window.onload = function () {
                 info.innerText = `Vous êtes ${playerName} (${myColor}). Adversaire: ${opponent || "En attente..."}`;
             }
         }
+    });
+
+    socket.on('opponent_abandoned', () => {
+        alert("Votre adversaire a abandonné la partie. Vous avez gagné !");
+        location.reload();
     });
 
     socket.on('board_update', (data) => {

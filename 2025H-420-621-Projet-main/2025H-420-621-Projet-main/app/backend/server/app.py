@@ -9,23 +9,18 @@ from game import Game, Board
 from game.piece import string_to_piece
 from game.rules import validate_move, is_checkmate, is_promotion
 
-# Suivi des joueurs
 players = {}
-player_slots = {"white": None, "black": None}  # Assigne une seule fois
+player_slots = {"white": None, "black": None}
+abandon_messages = set()
 
-# Définir les chemins des dossiers frontend
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "../../frontend/templates")
 STATIC_DIR = os.path.join(BASE_DIR, "../../frontend/static")
 
-# Initialiser l'application Flask
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 CORS(app, resources={r"/*": {"origins": "*"}})
-
-# Initialiser SocketIO avec support CORS
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
-# Créer une instance du jeu
 game = Game()
 
 @app.route("/")
@@ -41,6 +36,11 @@ def handle_connect():
     sid = request.sid
     print(f"Connexion détectée: {sid}")
     players[sid] = {"name": None, "color": "spectator"}
+
+    if sid in abandon_messages:
+        socketio.emit("opponent_abandoned", room=sid)
+        abandon_messages.remove(sid)
+
     socketio.emit("player_list", players)
 
 @socketio.on("disconnect")
@@ -48,7 +48,6 @@ def handle_disconnect():
     sid = request.sid
     print(f"Déconnexion: {sid}")
 
-    # Libère l'emplacement si nécessaire
     if sid == player_slots.get("white"):
         player_slots["white"] = None
     elif sid == player_slots.get("black"):
@@ -65,7 +64,6 @@ def register_name(data):
     if sid in players:
         players[sid]["name"] = name
 
-        # Attribue une couleur si disponible
         if player_slots["white"] is None:
             players[sid]["color"] = "white"
             player_slots["white"] = sid
@@ -79,6 +77,7 @@ def register_name(data):
 
 @socketio.on("move_piece")
 def handle_move(data):
+    global game
     try:
         from_x = data['from_x']
         from_y = data['from_y']
@@ -117,9 +116,32 @@ def handle_move(data):
 
         if is_checkmate(game):
             socketio.emit('game_over', {'winner': piece_str.split()[0]})
+            game = Game()  # Reset du jeu après victoire
 
     except Exception as e:
         socketio.emit('move_error', {'error': str(e)})
+
+@socketio.on("player_abandon")
+def handle_player_abandon():
+    global game
+    sid = request.sid
+    color = players.get(sid, {}).get("color")
+
+    if color == "white":
+        opponent_sid = player_slots.get("black")
+    elif color == "black":
+        opponent_sid = player_slots.get("white")
+    else:
+        opponent_sid = None
+
+    if opponent_sid:
+        if opponent_sid in players:
+            socketio.emit("opponent_abandoned", room=opponent_sid)
+        else:
+            abandon_messages.add(opponent_sid)
+
+    print(f"Player {sid} ({color}) a abandonné.")
+    game = Game()  # Reset du jeu après abandon
 
 if __name__ == "__main__":
     print("🚀 Serveur Flask-SocketIO démarré sur http://localhost:5000")
