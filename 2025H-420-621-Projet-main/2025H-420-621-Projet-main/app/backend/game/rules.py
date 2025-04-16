@@ -198,7 +198,7 @@ def can_en_passant(game, fx, fy, tx, ty):
     return False
 
 def is_checkmate(game):
-    color = game.turn
+    color = "black" if game.turn == "white" else "white"  # Vérifie l’adversaire du joueur courant
     board = game.board.board
 
     for x in range(8):

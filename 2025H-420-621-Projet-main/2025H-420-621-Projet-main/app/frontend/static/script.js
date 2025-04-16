@@ -82,6 +82,16 @@ window.onload = function () {
         location.reload();
     });
 
+    socket.on("victory_checkmate", () => {
+        alert("Vous avez gagné par échec et mat !");
+        location.reload();
+    });
+
+    socket.on("defeat_checkmate", () => {
+        alert("Vous avez perdu par échec et mat.");
+        location.reload();
+    });
+
     socket.on('board_update', (data) => {
         const updatedBoard = data.board;
         boardState = updatedBoard;
