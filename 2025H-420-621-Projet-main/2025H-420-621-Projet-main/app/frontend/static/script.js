@@ -24,7 +24,6 @@ window.onload = function () {
     let myColor = null;
     let canPlay = false;
     let multiplayerRequested = false;
-    let currentTurn = "white";
 
     btnMulti.onclick = () => {
         multiplayerRequested = true;
@@ -78,7 +77,7 @@ window.onload = function () {
     });
 
     socket.on('opponent_abandoned', () => {
-        alert("Votre adversaire a abandonné la partie. Vous avez gagné !");
+        alert("Votre adversaire a abandonné la partie. Vous avez gagné par abandon.");
         location.reload();
     });
 

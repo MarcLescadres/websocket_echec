@@ -5,7 +5,7 @@ eventlet.monkey_patch()
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
 from flask_cors import CORS
-from game import Game, Board
+from game import Game
 from game.piece import string_to_piece
 from game.rules import validate_move, is_checkmate, is_promotion
 
@@ -18,7 +18,7 @@ TEMPLATES_DIR = os.path.join(BASE_DIR, "../../frontend/templates")
 STATIC_DIR = os.path.join(BASE_DIR, "../../frontend/static")
 
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
 game = Game()
@@ -46,13 +46,10 @@ def handle_connect():
 @socketio.on("disconnect")
 def handle_disconnect():
     sid = request.sid
-    print(f"Déconnexion: {sid}")
-
-    if sid == player_slots.get("white"):
+    if sid == player_slots["white"]:
         player_slots["white"] = None
-    elif sid == player_slots.get("black"):
+    elif sid == player_slots["black"]:
         player_slots["black"] = None
-
     players.pop(sid, None)
     socketio.emit("player_list", players)
 
@@ -60,10 +57,8 @@ def handle_disconnect():
 def register_name(data):
     sid = request.sid
     name = data.get("name")
-
     if sid in players:
         players[sid]["name"] = name
-
         if player_slots["white"] is None:
             players[sid]["color"] = "white"
             player_slots["white"] = sid
@@ -72,7 +67,6 @@ def register_name(data):
             player_slots["black"] = sid
         else:
             players[sid]["color"] = "spectator"
-
     socketio.emit("player_list", players)
 
 @socketio.on("move_piece")
@@ -104,7 +98,16 @@ def handle_move(data):
             'to': (to_x, to_y)
         }
 
-        
+        socketio.emit('board_update', {
+            'board': game.board.board,
+            'from_x': from_x,
+            'from_y': from_y,
+            'to_x': to_x,
+            'to_y': to_y,
+            'reason': reason
+        })
+
+        # Maintenant on vérifie l’échec et mat
         if is_checkmate(game):
             print("Échec et mat détecté")
             winner_color = piece_str.split()[0]
@@ -116,20 +119,10 @@ def handle_move(data):
             if loser_sid:
                 socketio.emit("defeat_checkmate", room=loser_sid)
 
-            game = Game()
-            return  # ⛔ Sortir après victoire, ne pas changer le tour
+            return  # ⛔ NE PAS changer le tour si la partie est terminée
 
-        
+        # Sinon, changer le tour
         game.turn = "black" if game.turn == "white" else "white"
-
-        socketio.emit('board_update', {
-            'board': game.board.board,
-            'from_x': from_x,
-            'from_y': from_y,
-            'to_x': to_x,
-            'to_y': to_y,
-            'reason': reason
-        })
 
     except Exception as e:
         socketio.emit('move_error', {'error': str(e)})
@@ -139,13 +132,7 @@ def handle_player_abandon():
     global game
     sid = request.sid
     color = players.get(sid, {}).get("color")
-
-    if color == "white":
-        opponent_sid = player_slots.get("black")
-    elif color == "black":
-        opponent_sid = player_slots.get("white")
-    else:
-        opponent_sid = None
+    opponent_sid = player_slots["black"] if color == "white" else player_slots["white"]
 
     if opponent_sid:
         if opponent_sid in players:
@@ -153,8 +140,8 @@ def handle_player_abandon():
         else:
             abandon_messages.add(opponent_sid)
 
+    game = Game()
     print(f"Player {sid} ({color}) a abandonné.")
-    game = Game()  # Reset du jeu après abandon
 
 if __name__ == "__main__":
     print("🚀 Serveur Flask-SocketIO démarré sur http://localhost:5000")
